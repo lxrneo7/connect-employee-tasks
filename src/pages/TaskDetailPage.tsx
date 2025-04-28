@@ -18,7 +18,6 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case 'Новая': return 'bg-blue-500';
     case 'В процессе': return 'bg-yellow-500';
-    case 'Выполнено': return 'bg-green-500';
     case 'Завершена': return 'bg-green-500';
     default: return 'bg-gray-500';
   }
@@ -52,18 +51,14 @@ const TaskDetailPage: React.FC = () => {
 
   const taskId = id ? parseInt(id) : 0;
 
-  // Use React Query for fetching task data with corrected options
   const { data: task, isLoading, isError } = useQuery({
     queryKey: ['task', taskId],
     queryFn: () => getTaskById(taskId),
     enabled: Boolean(taskId) && !isNaN(taskId),
     retry: 1,
     staleTime: 5 * 60 * 1000,
-    // Remove the onError option since it's not supported in this version of react-query
-    // Instead, handle errors with onSettled or through the component UI
   });
 
-  // Add error toast handling here instead of in onError
   React.useEffect(() => {
     if (isError) {
       toast({
@@ -75,13 +70,13 @@ const TaskDetailPage: React.FC = () => {
   }, [isError, toast]);
 
   const handleBack = () => {
-    navigate(-1); // Navigate back to previous page
+    navigate(-1);
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-8">
-        <div className="max-w-3xl mx-auto p-4">
+        <div className="max-w-3xl mx-auto">
           <div className="flex justify-center items-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
@@ -93,7 +88,7 @@ const TaskDetailPage: React.FC = () => {
   if (isError || !task) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-8">
-        <div className="max-w-3xl mx-auto p-4">
+        <div className="max-w-3xl mx-auto">
           <div className="text-center py-10">
             <p className="text-red-500 mb-4">Ошибка при загрузке задачи</p>
             <Button variant="outline" onClick={handleBack}>
