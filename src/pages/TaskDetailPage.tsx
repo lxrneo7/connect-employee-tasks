@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Task } from '../types/task';
 import { getTaskById } from '../services/taskService';
 import { Loader2, ArrowLeft, Calendar, Clock } from 'lucide-react';
@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from '@tanstack/react-query';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -46,50 +47,33 @@ const formatDate = (dateString: string | undefined): string => {
 
 const TaskDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [task, setTask] = useState<Task | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchTask = async () => {
-      try {
-        if (!id) {
-          setError('ID задачи не указан');
-          return;
-        }
-        
-        const taskId = parseInt(id);
-        if (isNaN(taskId)) {
-          setError('Некорректный ID задачи');
-          return;
-        }
-        
-        const data = await getTaskById(taskId);
-        setTask(data);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching task:', err);
-        setError('Ошибка при загрузке задачи');
-        toast({
-          variant: "destructive",
-          title: "Ошибка",
-          description: "Не удалось загрузить данные задачи",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const taskId = id ? parseInt(id) : 0;
 
-    fetchTask();
-  }, [id, toast]);
+  // Use React Query for fetching task data
+  const { data: task, isLoading, isError } = useQuery({
+    queryKey: ['task', taskId],
+    queryFn: () => getTaskById(taskId),
+    enabled: Boolean(taskId) && !isNaN(taskId),
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+    onError: (err: any) => {
+      console.error('Error fetching task in React Query:', err);
+      toast({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось загрузить данные задачи",
+      });
+    }
+  });
 
   const handleBack = () => {
     navigate(-1); // Navigate back to previous page
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-8">
         <div className="max-w-3xl mx-auto p-4">
@@ -101,12 +85,12 @@ const TaskDetailPage: React.FC = () => {
     );
   }
 
-  if (error || !task) {
+  if (isError || !task) {
     return (
       <div className="min-h-screen bg-gray-50 px-4 py-8">
         <div className="max-w-3xl mx-auto p-4">
           <div className="text-center py-10">
-            <p className="text-red-500 mb-4">{error || 'Задача не найдена'}</p>
+            <p className="text-red-500 mb-4">Ошибка при загрузке задачи</p>
             <Button variant="outline" onClick={handleBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Вернуться назад
@@ -147,9 +131,13 @@ const TaskDetailPage: React.FC = () => {
                 </div>
                 {task.parent_task && (
                   <div className="flex items-center">
-                    <Link to={`/tasks/${task.parent_task}`} className="text-blue-500 hover:underline">
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-blue-500 hover:text-blue-700"
+                      onClick={() => navigate(`/tasks/${task.parent_task}`)}
+                    >
                       Родительская задача: #{task.parent_task}
-                    </Link>
+                    </Button>
                   </div>
                 )}
               </div>

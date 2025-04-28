@@ -44,7 +44,7 @@ export const getTaskById = async (id: number): Promise<Task> => {
     
     if (!response.ok) {
       console.error('Error fetching task details:', response.status, response.statusText);
-      throw new Error('Failed to fetch task details');
+      throw new Error(`Failed to fetch task details: ${response.status}`);
     }
     
     const data = await response.json();
