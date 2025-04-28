@@ -1,9 +1,9 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Task } from '../types/task';
 import { getTaskById } from '../services/taskService';
-import { Loader2, ArrowLeft, Calendar, Clock } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,22 +52,27 @@ const TaskDetailPage: React.FC = () => {
 
   const taskId = id ? parseInt(id) : 0;
 
-  // Use React Query for fetching task data
+  // Use React Query for fetching task data with corrected options
   const { data: task, isLoading, isError } = useQuery({
     queryKey: ['task', taskId],
     queryFn: () => getTaskById(taskId),
     enabled: Boolean(taskId) && !isNaN(taskId),
     retry: 1,
     staleTime: 5 * 60 * 1000,
-    onError: (err: any) => {
-      console.error('Error fetching task in React Query:', err);
+    // Remove the onError option since it's not supported in this version of react-query
+    // Instead, handle errors with onSettled or through the component UI
+  });
+
+  // Add error toast handling here instead of in onError
+  React.useEffect(() => {
+    if (isError) {
       toast({
         variant: "destructive",
         title: "Ошибка",
         description: "Не удалось загрузить данные задачи",
       });
     }
-  });
+  }, [isError, toast]);
 
   const handleBack = () => {
     navigate(-1); // Navigate back to previous page
